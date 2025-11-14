@@ -5,6 +5,7 @@
 #include <algorithm>
 #include <vector>
 
+// замен на хеш??
 std::string encrypt(std::string input) {
     std::vector<char> word(input.begin(), input.end());
     std::string range = "abcdefghijklmnopqrstuvwxyz";
@@ -30,21 +31,21 @@ void Auth::Authent(std::string& str) {
     str = encrypt(str);
 }
 
-std::string Auth::roleToString(AuthRole role) {
+std::string Auth::roleToString(AuthRole role) const {
     switch (role) {
-    case AuthRole::buyer: return "buyer";
+    case AuthRole::buyer:  return "buyer";
     case AuthRole::seller: return "seller";
-    case AuthRole::admin: return "admin";
+    case AuthRole::admin:  return "admin";
     default: return "buyer";
     }
 }
+
 AuthRole Auth::stringToRole(const std::string& str) {
-    if (str == "buyer") return AuthRole::buyer;
+    if (str == "buyer")  return AuthRole::buyer;
     if (str == "seller") return AuthRole::seller;
-    if (str == "admin") return AuthRole::admin;
+    if (str == "admin")  return AuthRole::admin;
     return AuthRole::buyer;
 }
-
 
 void Auth::loadUsers() {
     users.clear();
@@ -57,6 +58,7 @@ void Auth::loadUsers() {
         users.push_back({ login, encrypted, stringToRole(roleStr) });
     }
 }  
+
 void Auth::saveUsers() const {
     std::ofstream out(dbFile);
     for (const auto& user : users) {
