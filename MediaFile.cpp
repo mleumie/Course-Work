@@ -1,167 +1,150 @@
 #include "MediaFile.h"
 #include <iostream>
+#include <string>
+#include <utility>
 
 // MediaFile
 MediaFile::MediaFile(std::string t, std::string a, double p, int s, std::string f)
-    : title(t), author(a), price(p), size(s), format(f) {
+    : title(std::move(t)), author(std::move(a)), format(std::move(f)), price(p), size(s) {
 }
-MediaFile::~MediaFile() {}
-int MediaFile::getSize()           const { return size; }
-double MediaFile::getPrice()       const { return price; }
-std::string MediaFile::getTitle()  const { return title; }
-std::string MediaFile::getAuthor() const { return author; }
-std::string MediaFile::getFormat() const { return format; }
-std::string MediaFile::getType()   const { return "Media"; }
+
+MediaFile::~MediaFile() = default;
 
 void MediaFile::edit() {
-    std::cout << "Редактирование файла (Enter - пропустить ввод)\n";
+    std::cout << "Редактирование полей (Enter - оставить):\n";
     std::string input;
-    std::cout << "Изменить название (" << title << "):";
+
+    std::cout << "Название (" << title << "): ";
     std::getline(std::cin >> std::ws, input);
     if (!input.empty()) title = input;
 
-    std::cout << "Изменить автора (" << author << "):";
+    std::cout << "Автор (" << author << "): ";
     std::getline(std::cin >> std::ws, input);
     if (!input.empty()) author = input;
 
-    std::cout << "Изменить формат (" << format << "):";
+    std::cout << "Формат (" << format << "): ";
     std::getline(std::cin >> std::ws, input);
     if (!input.empty()) format = input;
 
-    bool valid = false;
-    while (!valid) {
-        std::cout << "Изменить цену (" << price << "):";
+    // Цена
+    while (true) {
+        std::cout << "Цена (" << price << "): ";
         std::getline(std::cin >> std::ws, input);
-        if (input.empty()) { break; }
-        try { 
-            double newPrice = std::stod(input);
-            if (newPrice >= 0) {
-                price = newPrice;
-                valid = true;
-            }
-            else {
-                std::cout << "Цена не может быть отрицательной\n";
-            }
+        if (input.empty()) break;
+        try {
+            double v = std::stod(input);
+            if (v >= 0) { price = v; break; }
+            else std::cout << "Нужно неотрицательное число\n";
         }
-        catch (...) { std::cout << "Неверный формат числа\n"; }
+        catch (...) { std::cout << "Неправильный формат\n"; }
     }
 
-    valid = false;
-    while (!valid) {
-        std::cout << "Изменить размер (" << size << "):";
+    // Размер
+    while (true) {
+        std::cout << "Размер (" << size << "): ";
         std::getline(std::cin >> std::ws, input);
-        if (input.empty()) { break; }
-        try { 
-            int newSize = std::stoi(input);
-            if (newSize >= 0) {
-                size = newSize;
-                valid = true;
-            }
-            else {
-                std::cout << "Размер не может быть отрицательным\n";
-            }
+        if (input.empty()) break;
+        try {
+            int v = std::stoi(input);
+            if (v >= 0) { size = v; break; }
+            else std::cout << "Нужно неотрицательное число\n";
         }
-        catch (...) { std::cout << "Неверный формат числа\n"; }
+        catch (...) { std::cout << "Неправильный формат\n"; }
     }
 }
+
+std::string MediaFile::getType() const { return "Media"; }
+double MediaFile::getPrice() const { return price; }
+std::string MediaFile::getTitle() const { return title; }
+std::string MediaFile::getAuthor() const { return author; }
+std::string MediaFile::getFormat() const { return format; }
+int MediaFile::getSize() const { return size; }
 
 // AudioFile
 AudioFile::AudioFile(std::string t, std::string a, double p, int s, std::string f, int d, std::string al)
-    : MediaFile(t, a, p, s, f), duration(d), album(al) {
-}
-std::string AudioFile::getType() const { return "Audio"; }
-int AudioFile::getDuration() const { return duration; }
-std::string AudioFile::getAlbum() const { return album; }
-
-void AudioFile::printInfo() const {
-    std::cout << "[Аудио] " << title << ", Автор: " << author << ", Формат: " << format
-        << ", Цена: " << price << ", Размер: " << size << " МБ, "
-        << "Длительность: " << duration << " сек., Альбом: " << album << std::endl;
+    : MediaFile(std::move(t), std::move(a), p, s, std::move(f)), duration(d), album(std::move(al)) {
 }
 
 void AudioFile::edit() {
     MediaFile::edit();
     std::string input;
-    bool valid = false;
-    while (!valid) {
-    std::cout << "Изменить продолжительность (сек.) (" << duration << "):";
-    std::getline(std::cin >> std::ws, input);
-        if (input.empty()) { break; }
+    while (true) {
+        std::cout << "Длительность (сек) (" << duration << "): ";
+        std::getline(std::cin >> std::ws, input);
+        if (input.empty()) break;
         try {
-            int newDur = std::stoi(input);
-            if (newDur >= 0) {
-                duration = newDur;
-                valid = true;
-            }
-            else {
-                std::cout << "Продолжительность не может быть отрицательной\n";
-            }
+            int v = std::stoi(input);
+            if (v >= 0) { duration = v; break; }
+            else std::cout << "Нужно неотрицательное число\n";
         }
-        catch (...) { std::cout << "Неверный формат числа\n"; }
+        catch (...) { std::cout << "Неправильный формат\n"; }
     }
-
-    std::cout << "Изменить альбом (" << album << "):";
+    std::cout << "Альбом (" << album << "): ";
     std::getline(std::cin >> std::ws, input);
     if (!input.empty()) album = input;
 }
 
+void AudioFile::printInfo() const {
+    std::cout << "[Аудио] " << title << ", автор: " << author << ", формат: " << format
+        << ", цена: " << price << ", размер: " << size << " Кб, "
+        << "длительность: " << duration << " сек., альбом: " << album << std::endl;
+}
+
+std::string AudioFile::getType() const { return "Audio"; }
+std::string AudioFile::getAlbum() const { return album; }
+int AudioFile::getDuration() const { return duration; }
+
 // VideoFile
 VideoFile::VideoFile(std::string t, std::string a, double p, int s, std::string f, int d, std::string r)
-    : MediaFile(t, a, p, s, f), duration(d), resolution(r) {
-}
-std::string VideoFile::getType() const { return "Video"; }
-int VideoFile::getDuration() const { return duration; }
-std::string VideoFile::getResolution() const { return resolution; }
-
-void VideoFile::printInfo() const {
-    std::cout << "[Видео] " << title << ", Автор: " << author << ", Формат: " << format
-        << ", Цена: " << price << ", Размер: " << size << " МБ, "
-        << "Длительность: " << duration << " сек., Разрешение: " << resolution << std::endl;
+    : MediaFile(std::move(t), std::move(a), p, s, std::move(f)), duration(d), resolution(std::move(r)) {
 }
 
 void VideoFile::edit() {
     MediaFile::edit();
     std::string input;
-    bool valid = false;
-    while (!valid) {
-        std::cout << "Изменить продолжительность (сек.) (" << duration << "):";
+    while (true) {
+        std::cout << "Длительность (сек) (" << duration << "): ";
         std::getline(std::cin >> std::ws, input);
-        if (input.empty()) { break; }
+        if (input.empty()) break;
         try {
-            int newDur = std::stoi(input);
-            if (newDur >= 0) {
-                duration = newDur;
-                valid = true;
-            }
-            else {
-                std::cout << "Продолжительность не может быть отрицательной\n";
-            }
+            int v = std::stoi(input);
+            if (v >= 0) { duration = v; break; }
+            else std::cout << "Нужно неотрицательное число\n";
         }
-        catch (...) { std::cout << "Неверный формат числа\n"; }
+        catch (...) { std::cout << "Неправильный формат\n"; }
     }
-
-    std::cout << "Изменить качество (" << resolution << "):";
+    std::cout << "Разрешение (" << resolution << "): ";
     std::getline(std::cin >> std::ws, input);
     if (!input.empty()) resolution = input;
 }
 
+void VideoFile::printInfo() const {
+    std::cout << "[Видео] " << title << ", автор: " << author << ", формат: " << format
+        << ", цена: " << price << ", размер: " << size << " Кб, "
+        << "длительность: " << duration << " сек., разрешение: " << resolution << std::endl;
+}
+
+std::string VideoFile::getType() const { return "Video"; }
+std::string VideoFile::getResolution() const { return resolution; }
+int VideoFile::getDuration() const { return duration; }
+
 // ImageFile
 ImageFile::ImageFile(std::string t, std::string a, double p, int s, std::string f, std::string r)
-    : MediaFile(t, a, p, s, f), resolution(r) {
-}
-std::string ImageFile::getType() const { return "Image"; }
-std::string ImageFile::getResolution() const { return resolution; }
-
-void ImageFile::printInfo() const {
-    std::cout << "[Изображение] " << title << ", Автор: " << author << ", Формат: " << format
-        << ", Цена: " << price << ", Размер: " << size << " МБ, "
-        << "Разрешение: " << resolution << std::endl;
+    : MediaFile(std::move(t), std::move(a), p, s, std::move(f)), resolution(std::move(r)) {
 }
 
 void ImageFile::edit() {
     MediaFile::edit();
     std::string input;
-    std::cout << "Изменить качество (" << resolution << "):";
+    std::cout << "Разрешение (" << resolution << "): ";
     std::getline(std::cin >> std::ws, input);
     if (!input.empty()) resolution = input;
 }
+
+void ImageFile::printInfo() const {
+    std::cout << "[Изображение] " << title << ", автор: " << author << ", формат: " << format
+        << ", цена: " << price << ", размер: " << size << " Кб, разрешение: " << resolution << std::endl;
+}
+
+std::string ImageFile::getType() const { return "Image"; }
+std::string ImageFile::getResolution() const { return resolution; }

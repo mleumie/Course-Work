@@ -4,15 +4,20 @@
 #include "MediaFile.h"
 #include "MediaShop.h"
 #include <memory>
+#include <windows.h>
 
 void buyerMenu(Buyer& user, MediaShop& shop);
 void sellerMenu(Seller& user, MediaShop& shop);
 void adminMenu(Admin& user, MediaShop& shop);
 
 int main() {
+    SetConsoleOutputCP(1251);
+    SetConsoleCP(1251);
     setlocale(LC_ALL, "Russian");
     MediaShop shop;
     shop.loadFromFile("shop.txt");
+
+    std::string s = "[Аудио]";
 
     if (!shop.findSeller("oleg")) {
         auto seller1 = std::make_shared<Seller>("oleg", 0.0);
