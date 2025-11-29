@@ -23,3 +23,4 @@ obj/
 shop.txt
 users.txt
 login.log
+_codeql_detected_source_root
