@@ -6,21 +6,19 @@
 #include <vector>
 #include <stdexcept>
 
-// Caesar cipher encryption (shift by 3)
-std::string encrypt(std::string input) {
-    std::vector<char> word(input.begin(), input.end());
-    std::string range = "abcdefghijklmnopqrstuvwxyz";
-
-    for (size_t i = 0; i < input.length(); i++) {
-        for (size_t j = 0; j < range.length(); j++) {
-            if (word[i] == range[j]) {
-                word[i] = range[(j + 3) % 26];
-                break;
-            }
+// Caesar cipher encryption (shift by 3) - optimized using character arithmetic
+std::string encrypt(const std::string& input) {
+    std::string result = input;
+    for (char& c : result) {
+        if (c >= 'a' && c <= 'z') {
+            c = 'a' + (c - 'a' + 3) % 26;
         }
+        else if (c >= 'A' && c <= 'Z') {
+            c = 'A' + (c - 'A' + 3) % 26;
+        }
+        // Non-alphabetic characters remain unchanged
     }
-    std::string str(word.begin(), word.end());
-    return str;
+    return result;
 }
 
 Auth::Auth(const std::string& dbFile, const std::string& logFile)

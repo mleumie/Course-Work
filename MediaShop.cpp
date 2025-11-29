@@ -85,6 +85,12 @@ MediaShop::filterAllByType(const std::string& type) const {
 std::vector<std::pair<std::shared_ptr<Seller>, std::shared_ptr<MediaFile>>> 
 MediaShop::filterAllByPriceRange(double minPrice, double maxPrice) const {
     std::vector<std::pair<std::shared_ptr<Seller>, std::shared_ptr<MediaFile>>> results;
+    
+    // Handle edge case: swap if minPrice > maxPrice
+    if (minPrice > maxPrice) {
+        std::swap(minPrice, maxPrice);
+    }
+    
     for (const auto& seller : sellers) {
         if (!seller) continue;
         for (const auto& file : seller->getFiles()) {
