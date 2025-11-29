@@ -1,0 +1,25 @@
+# Object files
+*.o
+*.obj
+
+# Executables
+*.exe
+*.out
+mediashop
+
+# Build directories
+build/
+bin/
+obj/
+
+# IDE files
+.vscode/
+.idea/
+*.suo
+*.user
+*.sln.docstates
+
+# Data files created at runtime
+shop.txt
+users.txt
+login.log
