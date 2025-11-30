@@ -4,14 +4,12 @@
 #include <memory>
 #include <string>
 #include <iomanip>
-#include <fstream>
-#include <stdexcept>
 
 #include "User.h"
 #include "MediaShop.h"
 #include "MediaFile.h"
 
-// Helper functions for input
+// Вспомогательные функции для ввода
 static std::string readLine(const std::string& prompt = "") {
     std::string s;
     if (!prompt.empty()) std::cout << prompt;
@@ -26,15 +24,10 @@ static int readInt(const std::string& prompt = "", int def = -1) {
     while (true) {
         std::string s = readLine(prompt);
         if (s.empty()) return def;
-        try {
-            std::istringstream iss(s);
-            int v;
-            if (iss >> v) return v;
-            throw std::invalid_argument("РќРµРІРµСЂРЅС‹Р№ С„РѕСЂРјР°С‚");
-        }
-        catch (const std::exception&) {
-            std::cout << "РќРµРІРµСЂРЅС‹Р№ РІРІРѕРґ, РІРІРµРґРёС‚Рµ С†РµР»РѕРµ С‡РёСЃР»Рѕ.\n";
-        }
+        std::istringstream iss(s);
+        int v;
+        if (iss >> v) return v;
+        std::cout << "Неверный ввод, введите целое число.\n";
     }
 }
 
@@ -42,375 +35,205 @@ static double readDouble(const std::string& prompt = "", double def = -1.0) {
     while (true) {
         std::string s = readLine(prompt);
         if (s.empty()) return def;
-        try {
-            std::istringstream iss(s);
-            double v;
-            if (iss >> v) return v;
-            throw std::invalid_argument("РќРµРІРµСЂРЅС‹Р№ С„РѕСЂРјР°С‚");
-        }
-        catch (const std::exception&) {
-            std::cout << "РќРµРІРµСЂРЅС‹Р№ РІРІРѕРґ, РІРІРµРґРёС‚Рµ С‡РёСЃР»Рѕ.\n";
-        }
+        std::istringstream iss(s);
+        double v;
+        if (iss >> v) return v;
+        std::cout << "Неверный ввод, введите число.\n";
     }
 }
 
-// Display all files in shop
+// Вывод всех файлов 
 static void listAllFiles(const MediaShop& shop) {
     const auto& sellers = shop.getSellers();
     if (sellers.empty()) {
-        std::cout << "Р’ РјР°РіР°Р·РёРЅРµ РЅРµС‚ РїСЂРѕРґР°РІС†РѕРІ.\n";
+        std::cout << "В магазине нет продавцов.\n";
         return;
     }
     for (size_t i = 0; i < sellers.size(); ++i) {
         auto s = sellers[i];
         if (!s) continue;
-        std::cout << "\n--- РџСЂРѕРґР°РІРµС† " << (i + 1) << ": " << s->getLogin()
-            << " (Р±Р°Р»Р°РЅСЃ: " << s->getBalance() << ")\n";
+        std::cout << "\n--- Продавец " << (i + 1) << ": " << s->getLogin()
+            << " (баланс: " << s->getBalance() << ")\n";
         size_t cnt = s->getFilesCount();
         if (cnt == 0) {
-            std::cout << "  (РЅРµС‚ С„Р°Р№Р»РѕРІ)\n";
+            std::cout << "  (нет файлов)\n";
             continue;
         }
         for (size_t j = 1; j <= cnt; ++j) {
             auto f = s->getFile(static_cast<int>(j));
             if (!f) continue;
             std::cout << "  [" << j << "] " << f->getType() << " | " << f->getTitle()
-                << " | РђРІС‚РѕСЂ: " << f->getAuthor()
-                << " | Р¦РµРЅР°: " << f->getPrice()
-                << " | Р Р°Р·РјРµСЂ: " << f->getSize() << " РњР‘\n";
+                << " | Автор: " << f->getAuthor()
+                << " | Цена: " << f->getPrice()
+                << " | Размер: " << f->getSize() << " МБ\n";
         }
     }
 }
 
-// Display search/filter results
-static void displayResults(const std::vector<std::pair<std::shared_ptr<Seller>, std::shared_ptr<MediaFile>>>& results) {
-    if (results.empty()) {
-        std::cout << "РќРёС‡РµРіРѕ РЅРµ РЅР°Р№РґРµРЅРѕ.\n";
-        return;
-    }
-    std::cout << "\nРќР°Р№РґРµРЅРѕ С„Р°Р№Р»РѕРІ: " << results.size() << "\n";
-    for (size_t i = 0; i < results.size(); ++i) {
-        const auto& [seller, file] = results[i];
-        std::cout << "[" << (i + 1) << "] РџСЂРѕРґР°РІРµС†: " << seller->getLogin() 
-                  << " | " << file->getType() << " | " << file->getTitle()
-                  << " | РђРІС‚РѕСЂ: " << file->getAuthor()
-                  << " | Р¦РµРЅР°: " << file->getPrice() << "\n";
-    }
-}
-
-// Buyer Menu
+// Меню покупателя
 void buyerMenu(Buyer& user, MediaShop& shop) {
     while (true) {
-        std::cout << "\n--- РњРµРЅСЋ РїРѕРєСѓРїР°С‚РµР»СЏ (" << user.getLogin() << ") ---\n"
-            << "1. РџСЂРѕСЃРјРѕС‚СЂРµС‚СЊ РІСЃРµ С„Р°Р№Р»С‹\n"
-            << "2. РџРѕРёСЃРє РїРѕ РЅР°Р·РІР°РЅРёСЋ/Р°РІС‚РѕСЂСѓ\n"
-            << "3. Р¤РёР»СЊС‚СЂ РїРѕ С‚РёРїСѓ (Audio/Video/Image)\n"
-            << "4. Р¤РёР»СЊС‚СЂ РїРѕ С†РµРЅРµ\n"
-            << "5. РЎРѕСЂС‚РёСЂРѕРІРєР° РїРѕ С†РµРЅРµ\n"
-            << "6. РЎРѕСЂС‚РёСЂРѕРІРєР° РїРѕ РЅР°Р·РІР°РЅРёСЋ\n"
-            << "7. РљСѓРїРёС‚СЊ С„Р°Р№Р»\n"
-            << "8. РњРѕРё РїРѕРєСѓРїРєРё\n"
-            << "9. РћС‚С‡С‘С‚ Рѕ РїРѕРєСѓРїРєР°С…\n"
-            << "0. Р’С‹Р№С‚Рё РІ РіР»Р°РІРЅРѕРµ РјРµРЅСЋ\n> ";
+        std::cout << "\n--- Меню покупателя (" << user.getLogin() << ") ---\n"
+            << "1. Просмотреть все файлы\n"
+            << "2. Поиск по названию\n"
+            << "3. Купить файл\n"
+            << "4. Мои покупки\n"
+            << "0. Выход в главное меню\n> ";
         int choice = readInt("", -1);
-        
         if (choice == 0) break;
-        
         if (choice == 1) {
             listAllFiles(shop);
         }
         else if (choice == 2) {
-            std::string q = readLine("Р’РІРµРґРёС‚Рµ С‚РµРєСЃС‚ РґР»СЏ РїРѕРёСЃРєР°: ");
+            std::string q = readLine("Введите часть названия для поиска: ");
             if (q.empty()) continue;
-            auto results = shop.searchAllFiles(q);
-            displayResults(results);
+            bool found = false;
+            std::string ql = q;
+            std::transform(ql.begin(), ql.end(), ql.begin(), ::tolower);
+            for (auto& s : shop.getSellers()) {
+                if (!s) continue;
+                for (size_t j = 1; j <= s->getFilesCount(); ++j) {
+                    auto f = s->getFile((int)j);
+                    if (!f) continue;
+                    std::string t = f->getTitle();
+                    std::transform(t.begin(), t.end(), t.begin(), ::tolower);
+                    if (t.find(ql) != std::string::npos) {
+                        std::cout << "Продавец: " << s->getLogin() << " [" << j << "] "
+                            << f->getTitle() << " | Цена: " << f->getPrice() << "\n";
+                        found = true;
+                    }
+                }
+            }
+            if (!found) std::cout << "Ничего не найдено\n";
         }
         else if (choice == 3) {
-            std::cout << "Р’С‹Р±РµСЂРёС‚Рµ С‚РёРї: 1-Audio, 2-Video, 3-Image\n";
-            int t = readInt("> ", -1);
-            std::string type;
-            if (t == 1) type = "Audio";
-            else if (t == 2) type = "Video";
-            else if (t == 3) type = "Image";
-            else { std::cout << "РќРµРІРµСЂРЅС‹Р№ С‚РёРї\n"; continue; }
-            auto results = shop.filterAllByType(type);
-            displayResults(results);
-        }
-        else if (choice == 4) {
-            double minPrice = readDouble("РњРёРЅРёРјР°Р»СЊРЅР°СЏ С†РµРЅР°: ", 0.0);
-            double maxPrice = readDouble("РњР°РєСЃРёРјР°Р»СЊРЅР°СЏ С†РµРЅР°: ", 999999.0);
-            auto results = shop.filterAllByPriceRange(minPrice, maxPrice);
-            displayResults(results);
-        }
-        else if (choice == 5) {
-            std::cout << "1 - РїРѕ РІРѕР·СЂР°СЃС‚Р°РЅРёСЋ, 2 - РїРѕ СѓР±С‹РІР°РЅРёСЋ\n";
-            int order = readInt("> ", 1);
-            auto results = shop.getAllFilesSortedByPrice(order == 1);
-            displayResults(results);
-        }
-        else if (choice == 6) {
-            std::cout << "1 - РїРѕ РІРѕР·СЂР°СЃС‚Р°РЅРёСЋ (Рђ-РЇ), 2 - РїРѕ СѓР±С‹РІР°РЅРёСЋ (РЇ-Рђ)\n";
-            int order = readInt("> ", 1);
-            auto results = shop.getAllFilesSortedByTitle(order == 1);
-            displayResults(results);
-        }
-        else if (choice == 7) {
             listAllFiles(shop);
-            int sellerIdx = readInt("Р’С‹Р±РµСЂРёС‚Рµ РЅРѕРјРµСЂ РїСЂРѕРґР°РІС†Р° (Enter РґР»СЏ РѕС‚РјРµРЅС‹): ", -1);
+            int sellerIdx = readInt("Выберите номер продавца (Enter для отмены): ", -1);
             if (sellerIdx < 1 || sellerIdx > static_cast<int>(shop.getSellers().size())) {
-                std::cout << "РќРµРІРµСЂРЅС‹Р№ РЅРѕРјРµСЂ РїСЂРѕРґР°РІС†Р°\n";
+                std::cout << "Отмена или неверный продавец\n";
                 continue;
             }
             auto s = shop.getSellers()[sellerIdx - 1];
-            if (!s) { std::cout << "РџСЂРѕРґР°РІРµС† РЅРµ РЅР°Р№РґРµРЅ\n"; continue; }
-            int fileIdx = readInt("Р’С‹Р±РµСЂРёС‚Рµ РЅРѕРјРµСЂ С„Р°Р№Р»Р° Сѓ РїСЂРѕРґР°РІС†Р°: ", -1);
+            if (!s) { std::cout << "Продавец не найден\n"; continue; }
+            int fileIdx = readInt("Выберите номер файла у продавца: ", -1);
             auto f = s->getFile(fileIdx);
-            if (!f) { std::cout << "Р¤Р°Р№Р» РЅРµ РЅР°Р№РґРµРЅ\n"; continue; }
-            std::cout << "Р’С‹ РІС‹Р±СЂР°Р»Рё: " << f->getTitle() << ", С†РµРЅР°: " << f->getPrice() << "\n";
-            std::cout << "Р’Р°С€ Р±Р°Р»Р°РЅСЃ: " << user.getBalance() << "\n";
-            std::string ans = readLine("РџРѕРґС‚РІРµСЂРґРёС‚СЊ РїРѕРєСѓРїРєСѓ? (y/n): ");
-            if (ans == "y" || ans == "Y" || ans == "Рґ" || ans == "Р”") {
-                user.buy(f);
-            }
-            else {
-                std::cout << "РџРѕРєСѓРїРєР° РѕС‚РјРµРЅРµРЅР°\n";
-            }
-        }
-        else if (choice == 8) {
-            user.showPurchases();
-        }
-        else if (choice == 9) {
-            std::string report = user.generateReport();
-            std::cout << report;
-            
-            std::string saveAns = readLine("РЎРѕС…СЂР°РЅРёС‚СЊ РѕС‚С‡С‘С‚ РІ С„Р°Р№Р»? (y/n): ");
-            if (saveAns == "y" || saveAns == "Y" || saveAns == "Рґ" || saveAns == "Р”") {
-                try {
-                    std::string filename = "report_" + user.getLogin() + ".txt";
-                    std::ofstream outFile(filename);
-                    if (!outFile) {
-                        throw std::runtime_error("РќРµ СѓРґР°Р»РѕСЃСЊ СЃРѕР·РґР°С‚СЊ С„Р°Р№Р»");
-                    }
-                    outFile << report;
-                    outFile.close();
-                    std::cout << "РћС‚С‡С‘С‚ СЃРѕС…СЂР°РЅС‘РЅ РІ С„Р°Р№Р»: " << filename << "\n";
-                }
-                catch (const std::exception& e) {
-                    std::cerr << "РћС€РёР±РєР° СЃРѕС…СЂР°РЅРµРЅРёСЏ: " << e.what() << "\n";
-                }
-            }
-        }
-        else {
-            std::cout << "РќРµРІРµСЂРЅС‹Р№ РІС‹Р±РѕСЂ\n";
-        }
-    }
-}
-
-// Seller Menu
-void sellerMenu(Seller& user, MediaShop& /*shop*/) {
-    while (true) {
-        std::cout << "\n--- РњРµРЅСЋ РїСЂРѕРґР°РІС†Р° (" << user.getLogin() << ") ---\n"
-            << "1. РџСЂРѕСЃРјРѕС‚СЂРµС‚СЊ РјРѕРё С„Р°Р№Р»С‹\n"
-            << "2. Р”РѕР±Р°РІРёС‚СЊ С„Р°Р№Р»\n"
-            << "3. Р РµРґР°РєС‚РёСЂРѕРІР°С‚СЊ С„Р°Р№Р»\n"
-            << "4. РЈРґР°Р»РёС‚СЊ С„Р°Р№Р»\n"
-            << "5. РџРѕРёСЃРє РІ РјРѕРёС… С„Р°Р№Р»Р°С…\n"
-            << "6. Р¤РёР»СЊС‚СЂ РїРѕ С‚РёРїСѓ\n"
-            << "7. Р¤РёР»СЊС‚СЂ РїРѕ С†РµРЅРµ\n"
-            << "8. РЎРѕСЂС‚РёСЂРѕРІР°С‚СЊ РїРѕ С†РµРЅРµ\n"
-            << "9. РЎРѕСЂС‚РёСЂРѕРІР°С‚СЊ РїРѕ РЅР°Р·РІР°РЅРёСЋ\n"
-            << "10. РЎРѕСЂС‚РёСЂРѕРІР°С‚СЊ РїРѕ СЂР°Р·РјРµСЂСѓ\n"
-            << "0. Р’С‹Р№С‚Рё РІ РіР»Р°РІРЅРѕРµ РјРµРЅСЋ\n> ";
-        int choice = readInt("", -1);
-        
-        if (choice == 0) break;
-        
-        if (choice == 1) {
-            user.showUserFiles();
-        }
-        else if (choice == 2) {
-            std::cout << "Р’С‹Р±РµСЂРёС‚Рµ С‚РёРї С„Р°Р№Р»Р°: 1- Audio, 2- Video, 3- Image\n";
-            int t = readInt("РўРёРї: ", -1);
-            std::string title = readLine("РќР°Р·РІР°РЅРёРµ: ");
-            std::string author = readLine("РђРІС‚РѕСЂ: ");
-            double price = readDouble("Р¦РµРЅР°: ", 0.0);
-            int size = readInt("Р Р°Р·РјРµСЂ (РњР‘): ", 0);
-            std::string format = readLine("Р¤РѕСЂРјР°С‚ (РЅР°РїСЂРёРјРµСЂ mp3/jpg): ");
-            
-            try {
-                if (t == 1) {
-                    int dur = readInt("Р”Р»РёС‚РµР»СЊРЅРѕСЃС‚СЊ (СЃРµРє.): ", 0);
-                    std::string album = readLine("РђР»СЊР±РѕРј: ");
-                    user.addFile(std::make_shared<AudioFile>(title, author, price, size, format, dur, album));
-                }
-                else if (t == 2) {
-                    int dur = readInt("Р”Р»РёС‚РµР»СЊРЅРѕСЃС‚СЊ (СЃРµРє.): ", 0);
-                    std::string res = readLine("Р Р°Р·СЂРµС€РµРЅРёРµ (РЅР°РїСЂРёРјРµСЂ 1920x1080): ");
-                    user.addFile(std::make_shared<VideoFile>(title, author, price, size, format, dur, res));
-                }
-                else if (t == 3) {
-                    std::string res = readLine("Р Р°Р·СЂРµС€РµРЅРёРµ (РЅР°РїСЂРёРјРµСЂ 800x600): ");
-                    user.addFile(std::make_shared<ImageFile>(title, author, price, size, format, res));
+            if (!f) { std::cout << "Файл не найден\n"; continue; }
+            std::cout << "Вы выбрали: " << f->getTitle() << ", цена: " << f->getPrice() << "\n";
+            std::string ans = readLine("Подтвердить покупку? (y/n): ");
+            if (ans == "y" || ans == "Y") {
+                if (user.spend(f->getPrice())) {
+                    user.buy(f);
+                    std::cout << "Покупка успешна\n";
                 }
                 else {
-                    std::cout << "РќРµРІРµСЂРЅС‹Р№ С‚РёРї\n";
+                    std::cout << "Недостаточно средств\n";
                 }
             }
-            catch (const std::exception& e) {
-                std::cerr << "РћС€РёР±РєР° РґРѕР±Р°РІР»РµРЅРёСЏ С„Р°Р№Р»Р°: " << e.what() << "\n";
+            else {
+                std::cout << "Покупка отменена\n";
             }
-        }
-        else if (choice == 3) {
-            user.showUserFiles();
-            int idx = readInt("РќРѕРјРµСЂ С„Р°Р№Р»Р° РґР»СЏ СЂРµРґР°РєС‚РёСЂРѕРІР°РЅРёСЏ: ", -1);
-            auto f = user.getFile(idx);
-            if (!f) { std::cout << "Р¤Р°Р№Р» РЅРµ РЅР°Р№РґРµРЅ\n"; continue; }
-            f->edit();
-            std::cout << "Р¤Р°Р№Р» РѕС‚СЂРµРґР°РєС‚РёСЂРѕРІР°РЅ\n";
         }
         else if (choice == 4) {
-            user.showUserFiles();
-            int idx = readInt("РќРѕРјРµСЂ С„Р°Р№Р»Р° РґР»СЏ СѓРґР°Р»РµРЅРёСЏ: ", -1);
-            if (user.removeFile(idx)) std::cout << "Р¤Р°Р№Р» СѓРґР°Р»С‘РЅ\n";
-            else std::cout << "РќРµ РЅР°Р№РґРµРЅ С„Р°Р№Р» СЃ С‚Р°РєРёРј РЅРѕРјРµСЂРѕРј\n";
-        }
-        else if (choice == 5) {
-            std::string q = readLine("Р’РІРµРґРёС‚Рµ С‚РµРєСЃС‚ РґР»СЏ РїРѕРёСЃРєР°: ");
-            auto results = user.searchByTitle(q);
-            if (results.empty()) {
-                std::cout << "РќРёС‡РµРіРѕ РЅРµ РЅР°Р№РґРµРЅРѕ\n";
-            } else {
-                std::cout << "РќР°Р№РґРµРЅРѕ " << results.size() << " С„Р°Р№Р»РѕРІ:\n";
-                for (const auto& f : results) {
-                    if (f) f->printInfo();
-                }
-            }
-        }
-        else if (choice == 6) {
-            std::cout << "Р’С‹Р±РµСЂРёС‚Рµ С‚РёРї: 1-Audio, 2-Video, 3-Image\n";
-            int t = readInt("> ", -1);
-            std::string type;
-            if (t == 1) type = "Audio";
-            else if (t == 2) type = "Video";
-            else if (t == 3) type = "Image";
-            else { std::cout << "РќРµРІРµСЂРЅС‹Р№ С‚РёРї\n"; continue; }
-            auto results = user.filterByType(type);
-            if (results.empty()) {
-                std::cout << "Р¤Р°Р№Р»С‹ РЅРµ РЅР°Р№РґРµРЅС‹\n";
-            } else {
-                std::cout << "РќР°Р№РґРµРЅРѕ " << results.size() << " С„Р°Р№Р»РѕРІ:\n";
-                for (const auto& f : results) {
-                    if (f) f->printInfo();
-                }
-            }
-        }
-        else if (choice == 7) {
-            double minPrice = readDouble("РњРёРЅРёРјР°Р»СЊРЅР°СЏ С†РµРЅР°: ", 0.0);
-            double maxPrice = readDouble("РњР°РєСЃРёРјР°Р»СЊРЅР°СЏ С†РµРЅР°: ", 999999.0);
-            auto results = user.filterByPriceRange(minPrice, maxPrice);
-            if (results.empty()) {
-                std::cout << "Р¤Р°Р№Р»С‹ РЅРµ РЅР°Р№РґРµРЅС‹\n";
-            } else {
-                std::cout << "РќР°Р№РґРµРЅРѕ " << results.size() << " С„Р°Р№Р»РѕРІ:\n";
-                for (const auto& f : results) {
-                    if (f) f->printInfo();
-                }
-            }
-        }
-        else if (choice == 8) {
-            std::cout << "1 - РїРѕ РІРѕР·СЂР°СЃС‚Р°РЅРёСЋ, 2 - РїРѕ СѓР±С‹РІР°РЅРёСЋ\n";
-            int order = readInt("> ", 1);
-            user.sortFilesByPrice(order == 1);
-            std::cout << "Р¤Р°Р№Р»С‹ РѕС‚СЃРѕСЂС‚РёСЂРѕРІР°РЅС‹ РїРѕ С†РµРЅРµ\n";
-            user.showUserFiles();
-        }
-        else if (choice == 9) {
-            std::cout << "1 - РїРѕ РІРѕР·СЂР°СЃС‚Р°РЅРёСЋ (Рђ-РЇ), 2 - РїРѕ СѓР±С‹РІР°РЅРёСЋ (РЇ-Рђ)\n";
-            int order = readInt("> ", 1);
-            user.sortFilesByTitle(order == 1);
-            std::cout << "Р¤Р°Р№Р»С‹ РѕС‚СЃРѕСЂС‚РёСЂРѕРІР°РЅС‹ РїРѕ РЅР°Р·РІР°РЅРёСЋ\n";
-            user.showUserFiles();
-        }
-        else if (choice == 10) {
-            std::cout << "1 - РїРѕ РІРѕР·СЂР°СЃС‚Р°РЅРёСЋ, 2 - РїРѕ СѓР±С‹РІР°РЅРёСЋ\n";
-            int order = readInt("> ", 1);
-            user.sortFilesBySize(order == 1);
-            std::cout << "Р¤Р°Р№Р»С‹ РѕС‚СЃРѕСЂС‚РёСЂРѕРІР°РЅС‹ РїРѕ СЂР°Р·РјРµСЂСѓ\n";
-            user.showUserFiles();
+            user.showPurchases();
         }
         else {
-            std::cout << "РќРµРІРµСЂРЅС‹Р№ РІС‹Р±РѕСЂ\n";
+            std::cout << "Неверный выбор\n";
         }
     }
 }
 
-// Admin Menu
+// Меню продавца
+void sellerMenu(Seller& user, MediaShop& /*shop*/) {
+    while (true) {
+        std::cout << "\n--- Меню продавца (" << user.getLogin() << ") ---\n"
+            << "1. Просмотреть мои файлы\n"
+            << "2. Добавить файл\n"
+            << "3. Редактировать файл\n"
+            << "4. Удалить файл\n"
+            << "0. Выход в главное меню\n> ";
+        int choice = readInt("", -1);
+        if (choice == 0) break;
+        if (choice == 1) {
+            user.showUserFiles();
+        }
+        else if (choice == 2) {
+            std::cout << "Выберите тип файла: 1- Audio, 2- Video, 3- Image\n";
+            int t = readInt("Тип: ", -1);
+            std::string title = readLine("Название: ");
+            std::string author = readLine("Автор: ");
+            double price = readDouble("Цена: ", 0.0);
+            int size = readInt("Размер (МБ): ", 0);
+            std::string format = readLine("Формат (например mp3/jpg): ");
+            if (t == 1) {
+                int dur = readInt("Длительность (сек.): ", 0);
+                std::string album = readLine("Альбом: ");
+                user.addFile(std::make_shared<AudioFile>(title, author, price, size, format, dur, album));
+            }
+            else if (t == 2) {
+                int dur = readInt("Длительность (сек.): ", 0);
+                std::string res = readLine("Разрешение (например 1920x1080): ");
+                user.addFile(std::make_shared<VideoFile>(title, author, price, size, format, dur, res));
+            }
+            else if (t == 3) {
+                std::string res = readLine("Разрешение (например 800x600): ");
+                user.addFile(std::make_shared<ImageFile>(title, author, price, size, format, res));
+            }
+            else {
+                std::cout << "Неверный тип\n";
+            }
+        }
+        else if (choice == 3) {
+            user.showUserFiles();
+            int idx = readInt("Номер файла для редактирования: ", -1);
+            auto f = user.getFile(idx);
+            if (!f) { std::cout << "Файл не найден\n"; continue; }
+            f->edit();
+            std::cout << "Файл отредактирован\n";
+        }
+        else if (choice == 4) {
+            user.showUserFiles();
+            int idx = readInt("Номер файла для удаления: ", -1);
+            if (user.removeFile(idx)) std::cout << "Файл удалён\n";
+            else std::cout << "Не найден файл с таким номером\n";
+        }
+        else {
+            std::cout << "Неверный выбор\n";
+        }
+    }
+}
+
+// Меню админа
 void adminMenu(Admin& admin, MediaShop& shop) {
     while (true) {
-        std::cout << "\n--- РњРµРЅСЋ Р°РґРјРёРЅР° (" << admin.getLogin() << ") ---\n"
-            << "1. РџРѕРєР°Р·Р°С‚СЊ РїСЂРѕРґР°РІС†РѕРІ\n"
-            << "2. РџРѕРєР°Р·Р°С‚СЊ С„Р°Р№Р»С‹ РїСЂРѕРґР°РІС†Р°\n"
-            << "3. РЈРґР°Р»РёС‚СЊ С„Р°Р№Р» Сѓ РїСЂРѕРґР°РІС†Р°\n"
-            << "4. РџРѕРёСЃРє РїРѕ РІСЃРµРј С„Р°Р№Р»Р°Рј\n"
-            << "5. РЎС‚Р°С‚РёСЃС‚РёРєР° РјР°РіР°Р·РёРЅР°\n"
-            << "6. РћС‚С‡С‘С‚ РїРѕ РєР°С‚Р°Р»РѕРіСѓ\n"
-            << "0. Р’С‹Р№С‚Рё РІ РіР»Р°РІРЅРѕРµ РјРµРЅСЋ\n> ";
+        std::cout << "\n--- Меню админа (" << admin.getLogin() << ") ---\n"
+            << "1. Показать продавцов\n"
+            << "2. Показать файлы продавца\n"
+            << "3. Удалить файл у продавца\n"
+            << "0. Выход в главное меню\n> ";
         int choice = readInt("", -1);
-        
         if (choice == 0) break;
-        
         if (choice == 1) {
             shop.showSellers();
         }
         else if (choice == 2) {
             shop.showSellers();
-            int sidx = readInt("РќРѕРјРµСЂ РїСЂРѕРґР°РІС†Р°: ", -1);
+            int sidx = readInt("Номер продавца: ", -1);
             auto s = (sidx >= 1 && sidx <= static_cast<int>(shop.getSellers().size())) ? shop.getSellers()[sidx - 1] : nullptr;
-            if (!s) { std::cout << "РџСЂРѕРґР°РІРµС† РЅРµ РЅР°Р№РґРµРЅ\n"; continue; }
+            if (!s) { std::cout << "Продавец не найден\n"; continue; }
             s->showUserFiles();
         }
         else if (choice == 3) {
             shop.showSellers();
-            int sidx = readInt("РќРѕРјРµСЂ РїСЂРѕРґР°РІС†Р°: ", -1);
+            int sidx = readInt("Номер продавца: ", -1);
             auto s = (sidx >= 1 && sidx <= static_cast<int>(shop.getSellers().size())) ? shop.getSellers()[sidx - 1] : nullptr;
-            if (!s) { std::cout << "РџСЂРѕРґР°РІРµС† РЅРµ РЅР°Р№РґРµРЅ\n"; continue; }
+            if (!s) { std::cout << "Продавец не найден\n"; continue; }
             s->showUserFiles();
-            int fidx = readInt("РќРѕРјРµСЂ С„Р°Р№Р»Р° РґР»СЏ СѓРґР°Р»РµРЅРёСЏ: ", -1);
-            if (s->removeFile(fidx)) std::cout << "Р¤Р°Р№Р» СѓРґР°Р»С‘РЅ\n";
-            else std::cout << "РќРµ РЅР°Р№РґРµРЅ С„Р°Р№Р»\n";
-        }
-        else if (choice == 4) {
-            std::string q = readLine("Р’РІРµРґРёС‚Рµ С‚РµРєСЃС‚ РґР»СЏ РїРѕРёСЃРєР°: ");
-            auto results = shop.searchAllFiles(q);
-            displayResults(results);
-        }
-        else if (choice == 5) {
-            std::string stats = Admin::generateShopStatistics();
-            std::cout << stats;
-        }
-        else if (choice == 6) {
-            std::string report = shop.generateCatalogReport();
-            std::cout << report;
-            
-            std::string saveAns = readLine("РЎРѕС…СЂР°РЅРёС‚СЊ РѕС‚С‡С‘С‚ РІ С„Р°Р№Р»? (y/n): ");
-            if (saveAns == "y" || saveAns == "Y" || saveAns == "Рґ" || saveAns == "Р”") {
-                try {
-                    std::string filename = "catalog_report.txt";
-                    std::ofstream outFile(filename);
-                    if (!outFile) {
-                        throw std::runtime_error("РќРµ СѓРґР°Р»РѕСЃСЊ СЃРѕР·РґР°С‚СЊ С„Р°Р№Р»");
-                    }
-                    outFile << report;
-                    outFile.close();
-                    std::cout << "РћС‚С‡С‘С‚ СЃРѕС…СЂР°РЅС‘РЅ РІ С„Р°Р№Р»: " << filename << "\n";
-                }
-                catch (const std::exception& e) {
-                    std::cerr << "РћС€РёР±РєР° СЃРѕС…СЂР°РЅРµРЅРёСЏ: " << e.what() << "\n";
-                }
-            }
+            int fidx = readInt("Номер файла для удаления: ", -1);
+            if (s->removeFile(fidx)) std::cout << "Файл удалён\n";
+            else std::cout << "Не найден файл\n";
         }
         else {
-            std::cout << "РќРµРІРµСЂРЅС‹Р№ РІС‹Р±РѕСЂ\n";
+            std::cout << "Неверный выбор\n";
         }
     }
 }

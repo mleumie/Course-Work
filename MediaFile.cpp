@@ -2,76 +2,52 @@
 #include <iostream>
 #include <string>
 #include <utility>
-#include <sstream>
-#include <stdexcept>
-#include <iomanip>
-
-namespace MediaShopNS {
-
-// Static member initialization
-int MediaFile::totalFilesCount = 0;
-double MediaFile::totalSalesAmount = 0.0;
 
 // MediaFile
 MediaFile::MediaFile(std::string t, std::string a, double p, int s, std::string f)
     : title(std::move(t)), author(std::move(a)), format(std::move(f)), price(p), size(s) {
-    ++totalFilesCount;
 }
 
-MediaFile::~MediaFile() {
-    --totalFilesCount;
-}
+MediaFile::~MediaFile() = default;
 
 void MediaFile::edit() {
-    std::cout << "–†–µ–¥–∞–∫—Ç–∏—Ä–æ–≤–∞–Ω–∏–µ —Ñ–∞–π–ª–∞ (Enter - –æ—Å—Ç–∞–≤–∏—Ç—å):\n";
+    std::cout << "–Â‰‡ÍÚËÓ‚‡ÌËÂ ÔÓÎÂÈ (Enter - ÓÒÚ‡‚ËÚ¸):\n";
     std::string input;
 
-    std::cout << "–ù–∞–∑–≤–∞–Ω–∏–µ (" << title << "): ";
+    std::cout << "Õ‡Á‚‡ÌËÂ (" << title << "): ";
     std::getline(std::cin >> std::ws, input);
     if (!input.empty()) title = input;
 
-    std::cout << "–ê–≤—Ç–æ—Ä (" << author << "): ";
+    std::cout << "¿‚ÚÓ (" << author << "): ";
     std::getline(std::cin >> std::ws, input);
     if (!input.empty()) author = input;
 
-    std::cout << "–§–æ—Ä–º–∞—Ç (" << format << "): ";
+    std::cout << "‘ÓÏ‡Ú (" << format << "): ";
     std::getline(std::cin >> std::ws, input);
     if (!input.empty()) format = input;
 
-    // –¶–µ–Ω–∞ with error handling
     while (true) {
-        std::cout << "–¶–µ–Ω–∞ (" << price << "): ";
+        std::cout << "÷ÂÌ‡ (" << price << "): ";
         std::getline(std::cin >> std::ws, input);
         if (input.empty()) break;
         try {
             double v = std::stod(input);
             if (v >= 0) { price = v; break; }
-            else throw std::invalid_argument("–¶–µ–Ω–∞ –Ω–µ –º–æ–∂–µ—Ç –±—ã—Ç—å –æ—Ç—Ä–∏—Ü–∞—Ç–µ–ª—å–Ω–æ–π");
+            else std::cout << "ÕÛÊÌÓ ÌÂÓÚËˆ‡ÚÂÎ¸ÌÓÂ ˜ËÒÎÓ\n";
         }
-        catch (const std::invalid_argument& e) { 
-            std::cout << "–û—à–∏–±–∫–∞: " << e.what() << "\n"; 
-        }
-        catch (const std::out_of_range&) { 
-            std::cout << "–û—à–∏–±–∫–∞: —á–∏—Å–ª–æ —Å–ª–∏—à–∫–æ–º –±–æ–ª—å—à–æ–µ\n"; 
-        }
+        catch (...) { std::cout << "ÕÂÔ‡‚ËÎ¸Ì˚È ÙÓÏ‡Ú\n"; }
     }
 
-    // –†–∞–∑–º–µ—Ä with error handling
     while (true) {
-        std::cout << "–†–∞–∑–º–µ—Ä (" << size << "): ";
+        std::cout << "–‡ÁÏÂ (" << size << "): ";
         std::getline(std::cin >> std::ws, input);
         if (input.empty()) break;
         try {
             int v = std::stoi(input);
             if (v >= 0) { size = v; break; }
-            else throw std::invalid_argument("–†–∞–∑–º–µ—Ä –Ω–µ –º–æ–∂–µ—Ç –±—ã—Ç—å –æ—Ç—Ä–∏—Ü–∞—Ç–µ–ª—å–Ω—ã–º");
+            else std::cout << "ÕÛÊÌÓ ÌÂÓÚËˆ‡ÚÂÎ¸ÌÓÂ ˜ËÒÎÓ\n";
         }
-        catch (const std::invalid_argument& e) { 
-            std::cout << "–û—à–∏–±–∫–∞: " << e.what() << "\n"; 
-        }
-        catch (const std::out_of_range&) { 
-            std::cout << "–û—à–∏–±–∫–∞: —á–∏—Å–ª–æ —Å–ª–∏—à–∫–æ–º –±–æ–ª—å—à–æ–µ\n"; 
-        }
+        catch (...) { std::cout << "ÕÂÔ‡‚ËÎ¸Ì˚È ÙÓÏ‡Ú\n"; }
     }
 }
 
@@ -82,48 +58,6 @@ std::string MediaFile::getAuthor() const { return author; }
 std::string MediaFile::getFormat() const { return format; }
 int MediaFile::getSize() const { return size; }
 
-// Static methods implementation
-int MediaFile::getTotalFilesCount() { return totalFilesCount; }
-double MediaFile::getTotalSalesAmount() { return totalSalesAmount; }
-void MediaFile::addSale(double amount) { totalSalesAmount += amount; }
-void MediaFile::resetStatistics() { 
-    totalFilesCount = 0; 
-    totalSalesAmount = 0.0; 
-}
-
-// Serialize base class
-std::string MediaFile::serialize() const {
-    std::ostringstream oss;
-    oss << getType() << "|" << title << "|" << author << "|" 
-        << std::fixed << std::setprecision(2) << price << "|" << size << "|" << format;
-    return oss.str();
-}
-
-// Friend operator<< overload for MediaFile
-std::ostream& operator<<(std::ostream& os, const MediaFile& file) {
-    os << "[" << file.getType() << "] " << file.title 
-       << ", –ê–≤—Ç–æ—Ä: " << file.author 
-       << ", –§–æ—Ä–º–∞—Ç: " << file.format
-       << ", –¶–µ–Ω–∞: " << std::fixed << std::setprecision(2) << file.price 
-       << ", –†–∞–∑–º–µ—Ä: " << file.size << " –ú–ë";
-    return os;
-}
-
-// Friend operator>> overload for MediaFile (basic fields only)
-std::istream& operator>>(std::istream& is, MediaFile& file) {
-    std::cout << "–ù–∞–∑–≤–∞–Ω–∏–µ: ";
-    std::getline(is >> std::ws, file.title);
-    std::cout << "–ê–≤—Ç–æ—Ä: ";
-    std::getline(is >> std::ws, file.author);
-    std::cout << "–§–æ—Ä–º–∞—Ç: ";
-    std::getline(is >> std::ws, file.format);
-    std::cout << "–¶–µ–Ω–∞: ";
-    is >> file.price;
-    std::cout << "–†–∞–∑–º–µ—Ä (–ú–ë): ";
-    is >> file.size;
-    return is;
-}
-
 // AudioFile
 AudioFile::AudioFile(std::string t, std::string a, double p, int s, std::string f, int d, std::string al)
     : MediaFile(std::move(t), std::move(a), p, s, std::move(f)), duration(d), album(std::move(al)) {
@@ -133,49 +67,30 @@ void AudioFile::edit() {
     MediaFile::edit();
     std::string input;
     while (true) {
-        std::cout << "–î–ª–∏—Ç–µ–ª—å–Ω–æ—Å—Ç—å (—Å–µ–∫) (" << duration << "): ";
+        std::cout << "ƒÎËÚÂÎ¸ÌÓÒÚ¸ (ÒÂÍ) (" << duration << "): ";
         std::getline(std::cin >> std::ws, input);
         if (input.empty()) break;
         try {
             int v = std::stoi(input);
             if (v >= 0) { duration = v; break; }
-            else throw std::invalid_argument("–î–ª–∏—Ç–µ–ª—å–Ω–æ—Å—Ç—å –Ω–µ –º–æ–∂–µ—Ç –±—ã—Ç—å –æ—Ç—Ä–∏—Ü–∞—Ç–µ–ª—å–Ω–æ–π");
+            else std::cout << "ÕÛÊÌÓ ÌÂÓÚËˆ‡ÚÂÎ¸ÌÓÂ ˜ËÒÎÓ\n";
         }
-        catch (const std::invalid_argument& e) { 
-            std::cout << "–û—à–∏–±–∫–∞: " << e.what() << "\n"; 
-        }
-        catch (const std::out_of_range&) { 
-            std::cout << "–û—à–∏–±–∫–∞: —á–∏—Å–ª–æ —Å–ª–∏—à–∫–æ–º –±–æ–ª—å—à–æ–µ\n"; 
-        }
+        catch (...) { std::cout << "ÕÂÔ‡‚ËÎ¸Ì˚È ÙÓÏ‡Ú\n"; }
     }
-    std::cout << "–ê–ª—å–±–æ–º (" << album << "): ";
+    std::cout << "¿Î¸·ÓÏ (" << album << "): ";
     std::getline(std::cin >> std::ws, input);
     if (!input.empty()) album = input;
 }
 
 void AudioFile::printInfo() const {
-    std::cout << "[–ê—É–¥–∏–æ] " << title << ", –ê–≤—Ç–æ—Ä: " << author << ", –§–æ—Ä–º–∞—Ç: " << format
-        << ", –¶–µ–Ω–∞: " << price << ", –†–∞–∑–º–µ—Ä: " << size << " –ú–ë, "
-        << "–î–ª–∏—Ç–µ–ª—å–Ω–æ—Å—Ç—å: " << duration << " —Å–µ–∫., –ê–ª—å–±–æ–º: " << album << std::endl;
+    std::cout << "[¿Û‰ËÓ] " << title << ", ‡‚ÚÓ: " << author << ", ÙÓÏ‡Ú: " << format
+        << ", ˆÂÌ‡: " << price << ", ‡ÁÏÂ: " << size << "  ·, "
+        << "‰ÎËÚÂÎ¸ÌÓÒÚ¸: " << duration << " ÒÂÍ., ‡Î¸·ÓÏ: " << album << std::endl;
 }
 
 std::string AudioFile::getType() const { return "Audio"; }
 std::string AudioFile::getAlbum() const { return album; }
 int AudioFile::getDuration() const { return duration; }
-
-std::string AudioFile::serialize() const {
-    std::ostringstream oss;
-    oss << MediaFile::serialize() << "|" << duration << "|" << album;
-    return oss.str();
-}
-
-bool AudioFile::operator==(const AudioFile& other) const {
-    return title == other.title && author == other.author && album == other.album;
-}
-
-bool AudioFile::operator<(const AudioFile& other) const {
-    return price < other.price;
-}
 
 // VideoFile
 VideoFile::VideoFile(std::string t, std::string a, double p, int s, std::string f, int d, std::string r)
@@ -186,49 +101,30 @@ void VideoFile::edit() {
     MediaFile::edit();
     std::string input;
     while (true) {
-        std::cout << "–î–ª–∏—Ç–µ–ª—å–Ω–æ—Å—Ç—å (—Å–µ–∫) (" << duration << "): ";
+        std::cout << "ƒÎËÚÂÎ¸ÌÓÒÚ¸ (ÒÂÍ) (" << duration << "): ";
         std::getline(std::cin >> std::ws, input);
         if (input.empty()) break;
         try {
             int v = std::stoi(input);
             if (v >= 0) { duration = v; break; }
-            else throw std::invalid_argument("–î–ª–∏—Ç–µ–ª—å–Ω–æ—Å—Ç—å –Ω–µ –º–æ–∂–µ—Ç –±—ã—Ç—å –æ—Ç—Ä–∏—Ü–∞—Ç–µ–ª—å–Ω–æ–π");
+            else std::cout << "ÕÛÊÌÓ ÌÂÓÚËˆ‡ÚÂÎ¸ÌÓÂ ˜ËÒÎÓ\n";
         }
-        catch (const std::invalid_argument& e) { 
-            std::cout << "–û—à–∏–±–∫–∞: " << e.what() << "\n"; 
-        }
-        catch (const std::out_of_range&) { 
-            std::cout << "–û—à–∏–±–∫–∞: —á–∏—Å–ª–æ —Å–ª–∏—à–∫–æ–º –±–æ–ª—å—à–æ–µ\n"; 
-        }
+        catch (...) { std::cout << "ÕÂÔ‡‚ËÎ¸Ì˚È ÙÓÏ‡Ú\n"; }
     }
-    std::cout << "–†–∞–∑—Ä–µ—à–µ–Ω–∏–µ (" << resolution << "): ";
+    std::cout << "–‡ÁÂ¯ÂÌËÂ (" << resolution << "): ";
     std::getline(std::cin >> std::ws, input);
     if (!input.empty()) resolution = input;
 }
 
 void VideoFile::printInfo() const {
-    std::cout << "[–í–∏–¥–µ–æ] " << title << ", –ê–≤—Ç–æ—Ä: " << author << ", –§–æ—Ä–º–∞—Ç: " << format
-        << ", –¶–µ–Ω–∞: " << price << ", –†–∞–∑–º–µ—Ä: " << size << " –ú–ë, "
-        << "–î–ª–∏—Ç–µ–ª—å–Ω–æ—Å—Ç—å: " << duration << " —Å–µ–∫., –†–∞–∑—Ä–µ—à–µ–Ω–∏–µ: " << resolution << std::endl;
+    std::cout << "[¬Ë‰ÂÓ] " << title << ", ‡‚ÚÓ: " << author << ", ÙÓÏ‡Ú: " << format
+        << ", ˆÂÌ‡: " << price << ", ‡ÁÏÂ: " << size << "  ·, "
+        << "‰ÎËÚÂÎ¸ÌÓÒÚ¸: " << duration << " ÒÂÍ., ‡ÁÂ¯ÂÌËÂ: " << resolution << std::endl;
 }
 
 std::string VideoFile::getType() const { return "Video"; }
 std::string VideoFile::getResolution() const { return resolution; }
 int VideoFile::getDuration() const { return duration; }
-
-std::string VideoFile::serialize() const {
-    std::ostringstream oss;
-    oss << MediaFile::serialize() << "|" << duration << "|" << resolution;
-    return oss.str();
-}
-
-bool VideoFile::operator==(const VideoFile& other) const {
-    return title == other.title && author == other.author && resolution == other.resolution;
-}
-
-bool VideoFile::operator<(const VideoFile& other) const {
-    return price < other.price;
-}
 
 // ImageFile
 ImageFile::ImageFile(std::string t, std::string a, double p, int s, std::string f, std::string r)
@@ -238,31 +134,15 @@ ImageFile::ImageFile(std::string t, std::string a, double p, int s, std::string 
 void ImageFile::edit() {
     MediaFile::edit();
     std::string input;
-    std::cout << "–†–∞–∑—Ä–µ—à–µ–Ω–∏–µ (" << resolution << "): ";
+    std::cout << "–‡ÁÂ¯ÂÌËÂ (" << resolution << "): ";
     std::getline(std::cin >> std::ws, input);
     if (!input.empty()) resolution = input;
 }
 
 void ImageFile::printInfo() const {
-    std::cout << "[–ò–∑–æ–±—Ä–∞–∂–µ–Ω–∏–µ] " << title << ", –ê–≤—Ç–æ—Ä: " << author << ", –§–æ—Ä–º–∞—Ç: " << format
-        << ", –¶–µ–Ω–∞: " << price << ", –†–∞–∑–º–µ—Ä: " << size << " –ú–ë, –†–∞–∑—Ä–µ—à–µ–Ω–∏–µ: " << resolution << std::endl;
+    std::cout << "[»ÁÓ·‡ÊÂÌËÂ] " << title << ", ‡‚ÚÓ: " << author << ", ÙÓÏ‡Ú: " << format
+        << ", ˆÂÌ‡: " << price << ", ‡ÁÏÂ: " << size << "  ·, ‡ÁÂ¯ÂÌËÂ: " << resolution << std::endl;
 }
 
 std::string ImageFile::getType() const { return "Image"; }
 std::string ImageFile::getResolution() const { return resolution; }
-
-std::string ImageFile::serialize() const {
-    std::ostringstream oss;
-    oss << MediaFile::serialize() << "|" << resolution;
-    return oss.str();
-}
-
-bool ImageFile::operator==(const ImageFile& other) const {
-    return title == other.title && author == other.author && resolution == other.resolution;
-}
-
-bool ImageFile::operator<(const ImageFile& other) const {
-    return price < other.price;
-}
-
-} // namespace MediaShopNS
